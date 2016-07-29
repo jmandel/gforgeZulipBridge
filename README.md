@@ -12,7 +12,7 @@ pip install -r requirements.txt
 
 ### Configure
 
-Create env_values.py with secrets, like:
+Create `env_values.py` with secrets, like:
 
 ```
 cat > env_values.py
@@ -26,4 +26,4 @@ os.environ['ZULIP_API_KEY'] = "secret"
 
 ### Deploy to lambda
 
-sh deploy.sh
+    sh deploy.sh
