@@ -10,7 +10,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Confugure
+### Configure
 
 Create env_values.py with secrets, like:
 
