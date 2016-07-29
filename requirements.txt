@@ -1,0 +1,6 @@
+deploy.sh
+env_values.py
+env_values.pyc
+gforge.py
+requirements.txt
+venv
