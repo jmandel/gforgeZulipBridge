@@ -1,0 +1,4 @@
+env_values.py
+venv
+*.pyc
+distribution.zip
