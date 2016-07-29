@@ -16,28 +16,19 @@ try:
 except e:
     pass
 
-dynamodb = boto3.resource('dynamodb')
-issues = dynamodb.Table('gforge')
-
-def get_latest(tracker):
-    return int(issues.query(
+def get_latest(tracker, table):
+    return int(table.query(
         KeyConditionExpression=Key('tracker').eq(tracker),
         ScanIndexForward=False,
         Limit=1)['Items'][0]['item'])
 
-def put_latest(tracker, item):
-    issues.put_item(Item={
+def put_latest(tracker, item, table):
+    table.put_item(Item={
         'tracker': tracker,
         'item': decimal.Decimal(item)
     })
 
 login = {'username':'fhir_bot','password':os.environ['GFORGE_PASSWORD']}
-session = requests.Session()
-
-zulip_client = zulip.Client(
-    site='https://chat.fhir.org',
-    api_key=os.environ['ZULIP_API_KEY'],
-    email=os.environ['ZULIP_EMAIL'])
 
 def read_issues(s):
     s.post('http://gforge.hl7.org/gf/account/?action=LoginAction',data=login)
@@ -48,7 +39,7 @@ def read_issues(s):
         int(row[0]): (int(row[0]), row[1], row[4], row[5]) for row in reader
     }
 
-def post_issue(issue):
+def post_issue(issue, zulip_client):
     zulip_client.send_message({
         "type": 'stream',
         "content": "GF#%s: **%s** posted by `%s`" % (
@@ -59,16 +50,30 @@ def post_issue(issue):
         "to": "committers",
     })
 
+def lambda_handler(event, context):
 
-last_issue = get_latest('fhir')
-print("last issue in dynamo", last_issue)
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('gforge')
 
-issues = read_issues(session)
-print("newest issues on gf", issues)
+    zulip_client = zulip.Client(
+        site='https://chat.fhir.org',
+        api_key=os.environ['ZULIP_API_KEY'],
+        email=os.environ['ZULIP_EMAIL'])
 
-def lambda_handler(*args, **kwargs):
+
+    last_issue = get_latest('fhir', table)
+    print("last issue in dynamo", last_issue)
+
+    session = requests.Session()
+    issues = read_issues(session)
+    print("newest issues on gf", issues)
+
+    num_posted = 0
     for issue_number, issue in issues.iteritems():
         if issue_number > last_issue:
-            put_latest('fhir', issue_number)
-            post_issue(issue)
+            put_latest('fhir', issue_number, table)
+            post_issue(issue, zulip_client)
+            num_posted += 1
             print("so put", issue_number, issue)
+
+    return "Posted %s issues"%num_posted
