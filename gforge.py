@@ -79,3 +79,6 @@ def lambda_handler(event, context):
             print("so put", issue_number, issue)
 
     return "Posted %s issues"%num_posted
+
+if __name__ == "__main__":
+    lambda_handler(None, None)
