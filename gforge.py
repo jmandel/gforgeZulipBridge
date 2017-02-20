@@ -36,7 +36,8 @@ def read_issues(s):
     reader = unicodecsv.reader(StringIO.StringIO(changes.text.encode("utf-8")), encoding='utf-8')
     reader.next()
     return {
-        int(row[0]): (int(row[0]), row[1], row[4], row[5]) for row in reader
+        int(row[0]): (int(row[0]), row[1], row[5]) for row in reader
+        #'TrackerItemID', 'Summary', 'Submitted By'
     }
 
 def post_issue(issue, zulip_client):
@@ -61,15 +62,16 @@ def lambda_handler(event, context):
         email=os.environ['ZULIP_EMAIL'])
 
 
-    last_issue = get_latest('fhir', table)
-    print("last issue in dynamo", last_issue)
-
     session = requests.Session()
     issues = read_issues(session)
     print("newest issues on gf", issues)
 
     num_posted = 0
+    last_issue = get_latest('fhir', table)
+    print("last issue in dynamo", last_issue)
+
     for issue_number, issue in issues.iteritems():
+
         if issue_number > last_issue:
             put_latest('fhir', issue_number, table)
             post_issue(issue, zulip_client)
